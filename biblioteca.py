@@ -1,40 +1,31 @@
 def carica_da_file(file_path):
     """Carica i libri dal file"""
     # TODO
-
     from csv import reader
     with open ('file_path', 'r', encoding='utf-8') as f:
+        csvreader=reader(f)
+        f.readline()
 
-        try:
+        for line in csvreader:
+            biblioteca ={
+                'titolo': line[0],
+                'autore': line[1],
+                'anno_pubb':line[2],
+                'n_pagine':line[3],
+                'n_sezione':line[4]
+            }
 
-            csvreader=reader(f)
-
-            f.readline()
-
-            for line in csvreader:
-                libro={
-                    'titolo': line[0],
-                    'autore': line[1],
-                    'anno_pubb':line[2],
-                    'n_pagine':line[3],
-                    'n_sezione':line[4]
-                }
-
-
-        return libro
-
-        except FileNotFoundError:
-            print('none')
-
-
-
-
-
-
+    return biblioteca
 
 def aggiungi_libro(biblioteca, titolo, autore, anno, pagine, sezione, file_path):
     """Aggiunge un libro nella biblioteca"""
     # TODO
+    if titolo not in biblioteca:
+        from csv import writer
+        with open('file_path', 'w', encoding='utf-8') as f:
+            file_path.writerow({titolo},{autore},{anno},{pagine},{sezione})
+    else:
+        #errore
 
 
 def cerca_libro(biblioteca, titolo):
