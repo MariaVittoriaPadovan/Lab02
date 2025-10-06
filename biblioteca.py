@@ -3,31 +3,33 @@ import csv
 def carica_da_file(file_path):
     """Carica i libri dal file"""
     try:
-        with open ('file_path', 'r', encoding='utf-8') as f:
+        with open (file_path, 'r', encoding='utf-8') as f:
             reader=csv.reader(f)
             righe=[riga for riga in reader]
 
             numSezioni=int(righe[0][0].strip())
 
-            biblioteca={}
+            biblioteca = {s: [] for s in range(1, numSezioni+ 1)}
+            #inizializzo il dizionario biblioteca creando una corrispondenza tra chiavi(s)
+            #e i valori [], associo una lista vuota per ogni chiave
 
-            for riga in righe:
+            for riga in righe[1:]: #parto dalla seconda riga
                 titolo = riga[0].strip()
                 autore = riga[1].strip()
                 anno = int(riga[2].strip())
                 pagine = int(riga[3].strip())
                 sezione = int(riga[4].strip())
 
-            if sezione in biblioteca:
-                libro={
-                    "titolo": titolo,
-                    "autore": autore,
-                    "anno": anno,
-                    "pagine": pagine,
-                    "sezione": sezione
-                }
+                if sezione in biblioteca:
+                    libro={
+                        "titolo": titolo,
+                        "autore": autore,
+                        "anno": anno,
+                        "pagine": pagine,
+                        "sezione": sezione
+                    }
 
-            biblioteca[sezione].append(libro)
+                    biblioteca[sezione].append(libro)
 
         return biblioteca
 
@@ -43,9 +45,9 @@ def aggiungi_libro(biblioteca, titolo, autore, anno, pagine, sezione, file_path)
         return None
 
     titolo_norm = titolo.strip().lower()
-    for sezione in biblioteca:
-        for libro in sezione:
-            if libro[0].strip().lower() == titolo_norm:
+    for lista_libri in biblioteca.values():
+        for libro in lista_libri:
+            if libro['titolo'].strip().lower() == titolo_norm:
                 return None #perché il titolo è già presente
     libro = {
         "titolo": titolo,
@@ -69,12 +71,12 @@ def cerca_libro(biblioteca, titolo):
     """Cerca un libro nella biblioteca dato il titolo"""
 
     titolo_norm = titolo.strip().lower()
-    for sezione in biblioteca:
-        for libro in sezione:
+    for lista_libri in biblioteca.values():
+        for libro in lista_libri:
             if libro["titolo"].strip().lower() == titolo_norm:
                 return f"{libro['titolo']}, {libro['autore']}, {libro['anno']}, {libro['pagine']}, {libro['sezione']}"
-            else:
-                return None
+
+    return None #esterno altrimenti esce al primo libro non corrispondente
 
 
 
@@ -90,7 +92,7 @@ def elenco_libri_sezione_per_titolo(biblioteca, sezione):
 
 
 def main():
-    biblioteca = []
+    biblioteca = {}
     file_path = "biblioteca.csv"
 
     while True:
