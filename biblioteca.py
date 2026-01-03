@@ -1,94 +1,83 @@
 import csv
 
+from anyio.streams import file
+
+from libro import Libro
+
 def carica_da_file(file_path):
     """Carica i libri dal file"""
     try:
         with open (file_path, 'r', encoding='utf-8') as f:
             reader=csv.reader(f)
-            righe=[riga for riga in reader]
+            for riga in reader:
+                if len(riga) == 1:
+                    num_sezioni = int(riga[0]) #prima riga = numero sezioni
+                    biblioteca= crea_biblioteca(num_sezioni)
 
-            numSezioni=int(righe[0][0].strip())
+                if len(riga) == 5:
+                    titolo, autore, anno, pagine, sezione = riga
+                    libro= Libro(titolo.strip(), autore.strip(), int(anno), int(pagine))
+                    biblioteca[int(sezione)-1].append(libro)
 
-            biblioteca = {s: [] for s in range(1, numSezioni+ 1)}
-            #inizializzo il dizionario biblioteca creando una corrispondenza tra chiavi(s)
-            #e i valori [], associo una lista vuota per ogni chiave
-
-            for riga in righe[1:]: #parto dalla seconda riga
-                titolo = riga[0].strip()
-                autore = riga[1].strip()
-                anno = int(riga[2].strip())
-                pagine = int(riga[3].strip())
-                sezione = int(riga[4].strip())
-
-                if sezione in biblioteca:
-                    libro={
-                        "titolo": titolo,
-                        "autore": autore,
-                        "anno": anno,
-                        "pagine": pagine,
-                        "sezione": sezione
-                    }
-
-                    biblioteca[sezione].append(libro)
-
+        print(f"File ''{file_path}'' caricato correttamente con {num_sezioni} sezioni")
         return biblioteca
 
     except FileNotFoundError:
-        print(f"File '{file_path}' non trovato.")
+        print(f"Errore: il file '{file_path}' non esiste.")
         return None
+
+
+def crea_biblioteca(num_sezioni): #metodo interno per inizializzare la biblioteca
+    return [[] for i in range(num_sezioni)]
 
 
 def aggiungi_libro(biblioteca, titolo, autore, anno, pagine, sezione, file_path):
     """Aggiunge un libro nella biblioteca"""
 
-    if sezione not in biblioteca:
+    if sezione < 1 or sezione > len(biblioteca): #se la sezione non è nella biblioteca
         return None
 
-    titolo_norm = titolo.strip().lower()
-    for lista_libri in biblioteca.values():
-        for libro in lista_libri:
-            if libro['titolo'].strip().lower() == titolo_norm:
-                return None #perché il titolo è già presente
-    libro = {
-        "titolo": titolo,
-        "autore": autore,
-        "anno": anno,
-        "pagine": pagine,
-        "sezione": sezione
-    }
+    if cerca_libro(biblioteca, titolo) is not None: #se il libro già c'è non lo aggiungere
+        return None
 
-    biblioteca[sezione].append(libro)
+    libro= Libro(titolo, autore, anno, pagine)
+    biblioteca[sezione-1].append(libro)
 
+    try:
+        with open(file_path, "a", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow([libro.titolo, libro.autore, libro.anno, libro.pagine, sezione])
 
-    with open(file_path, "a", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        writer.writerow([titolo, autore, anno, pagine, sezione])
+        print(f'File aggiornato con i nuovi libri')
+
+    except FileNotFoundError:
+        #se il file non viene trovato non è possibile aggiungere il libro, lo elimino dalla lista
+        biblioteca[sezione-1].remove(libro)
+        print(f'''Errore: impossibile aggiornare il file '{file_path}' perché non esiste''')
+        return None
+
     return libro
-
 
 
 def cerca_libro(biblioteca, titolo):
     """Cerca un libro nella biblioteca dato il titolo"""
 
-    titolo_norm = titolo.strip().lower()
-    for lista_libri in biblioteca.values():
-        for libro in lista_libri:
-            if libro["titolo"].strip().lower() == titolo_norm:
-                return f"{libro['titolo']}, {libro['autore']}, {libro['anno']}, {libro['pagine']}, {libro['sezione']}"
-
-    return None #esterno altrimenti esce al primo libro non corrispondente
-
-
+    for numero_sezione, sezione in enumerate(biblioteca, start=1): #numero_sezioni deve partire da 1 e non da 0
+        for libro in sezione:
+            if libro.titolo == titolo:
+                return f"{libro.titolo}, {libro.autore}, {libro.anno}, {libro.pagine}, {numero_sezione}"
+    return None
 
 
 def elenco_libri_sezione_per_titolo(biblioteca, sezione):
     """Ordina i titoli di una data sezione della biblioteca in ordine alfabetico"""
     # TODO
-    if sezione not in biblioteca:
+    if sezione < 1 or sezione > len(biblioteca) :
+        print("Sezione non valida")
         return None
 
-    titoli = [libro["titolo"] for libro in biblioteca[sezione]]
-    return sorted(titoli, key=str.lower)
+    titoli = [libro.titolo for libro in biblioteca[sezione-1]]
+    return sorted(titoli)
 
 
 def main():
